@@ -1,3 +1,3 @@
-# Service Event Linker
+# Array
 
-**Link** **events** from **services** to an object.
+Array class, featuring many familiar methods from JavaScript and more.
