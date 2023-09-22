@@ -32,7 +32,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 	ArrayInstance = { __index = ArrayInstance }
 	local cache = preset
 
-	function ArrayInstance:_AssertValidType(value: any): nil
+	function ArrayInstance:_AssertValidType<T>(value: T): nil
 		local valueType = typeof(value) :: CheckableType
 		assert(elementType == valueType, `Expected array element to be of type "elementType", but got "{valueType}"`)
 		return
@@ -48,10 +48,32 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 
 	function ArrayInstance:Push<T>(...: T): nil
 		for _, v in { ... } do
-			self:_AssertValidType(typeof(v) :: CheckableType)
+			self:_AssertValidType(v)
 			table.insert(cache, v :: any)
 		end
 		return
+	end
+
+	function ArrayInstance:Unshift<T>(...: T): nil
+		for _, v in { ... } do
+			self:_AssertValidType(v)
+			self:Insert(v, 1)
+		end
+		return
+	end
+
+	function ArrayInstance:Insert<T>(value: T, index: number): nil
+		self:_AssertValidType(value)
+		table.insert(cache, index, value :: any)
+		return
+	end
+
+	function ArrayInstance:Pop<T>(): T?
+		return table.remove(cache, #cache) :: any
+	end
+
+	function ArrayInstance:Shift<T>(): T?
+		return table.remove(cache, 1) :: any
 	end
 
 	function ArrayInstance:Remove(index: number): nil
@@ -184,7 +206,7 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?)
 
 	local self = getInstance(elementType or "any", cache or {})
 	for v in self:Values() do
-		self:_AssertValidType(typeof(v) :: CheckableType)
+		self:_AssertValidType(v)
 	end
 
 	return setmetatable({}, {
