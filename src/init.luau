@@ -6,21 +6,49 @@ ArrayInstance.__index = ArrayInstance
 
 type PredicateFunction<T> = (value: T, index: number) -> boolean
 type SortFunction<T> = (a: T, b: T) -> boolean
+type CheckableType =
+	"string"
+	| "boolean"
+	| "number"
+	| "function"
+	| "table"
+	| "Vector2"
+	| "Vector3"
+	| "CFrame"
+	| "Instance"
+	| "Rect"
+	| "Font"
+	| "BrickColor"
+	| "Color"
+	| "UDim"
+	| "UDim2"
+	| "NumberSequence"
+	| "ColorSequence"
+	| "NumberRange"
+	| "any"
+	| "unknown"
 
-local function getInstance<T>(preset: { T }): typeof(ArrayInstance)
+local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof(ArrayInstance)
 	ArrayInstance = { __index = ArrayInstance }
 	local cache = preset
 
-	function ArrayInstance:First<T>(): T
+	function ArrayInstance:_AssertValidType(value: any): nil
+		local valueType = typeof(value) :: CheckableType
+		assert(elementType == valueType, `Expected array element to be of type "elementType", but got "{valueType}"`)
+		return
+	end
+
+	function ArrayInstance:First<T>(): T?
 		return cache[1] :: any
 	end
 
-	function ArrayInstance:Last<T>(): T
+	function ArrayInstance:Last<T>(): T?
 		return cache[#cache] :: any
 	end
 
 	function ArrayInstance:Push<T>(...: T): nil
 		for _, v in { ... } do
+			self:_AssertValidType(typeof(v) :: CheckableType)
 			table.insert(cache, v :: any)
 		end
 		return
@@ -51,13 +79,13 @@ local function getInstance<T>(preset: { T }): typeof(ArrayInstance)
 	function ArrayInstance:Sort<T>(sorter: SortFunction<T>?): typeof(ArrayInstance)
 		local sorted = cache
 		table.sort(sorted, sorter :: any)
-		return Array.new(sorted)
+		return Array.new(elementType, sorted)
 	end
 
 	function ArrayInstance:Map<T, U>(transform: (value: T, index: number) -> U): typeof(ArrayInstance)
 		local result = Array.new()
-		for v, i in self:Values() do
-			result:Push(transform(v, i) :: any)
+		for v: T, i: number in self:Values() do
+			result:Push(transform(v, i) :: U)
 		end
 		return result
 	end
@@ -130,14 +158,14 @@ local function getInstance<T>(preset: { T }): typeof(ArrayInstance)
 		return
 	end
 
-	function ArrayInstance:Values<T>(): () -> ...T?
+	function ArrayInstance:Values(): () -> (T?, number?)
 		local index = 0
 		local count = #cache
 
 		return function()
 			index += 1
 			if index <= count then
-				return cache[index] :: any
+				return cache[index], index
 			end
 			return
 		end
@@ -151,10 +179,13 @@ local function getInstance<T>(preset: { T }): typeof(ArrayInstance)
 	return ArrayInstance
 end
 
-function Array.new<T>(cache: { T }?)
+function Array.new<T>(elementType: CheckableType?, cache: { T }?)
 	assert(cache == nil or typeof(cache) == "table", "Preset cache must be a table!")
 
-	local self = getInstance(cache or {})
+	local self = getInstance(elementType or "any", cache or {})
+	for v in self:Values() do
+		self:_AssertValidType(typeof(v) :: CheckableType)
+	end
 
 	return setmetatable({}, {
 		__len = function()
@@ -173,7 +204,7 @@ function Array.new<T>(cache: { T }?)
 end
 
 return setmetatable(Array, {
-	__call = function<T>(_, cache: { T }?)
-		return Array.new(cache)
+	__call = function<T>(_, ...)
+		return Array.new(...)
 	end
 })
