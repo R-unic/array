@@ -34,7 +34,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 
 	function ArrayInstance:_AssertValidType<T>(value: T): nil
 		local valueType = typeof(value) :: CheckableType
-		assert(elementType == valueType, `Expected array element to be of type "elementType", but got "{valueType}"`)
+		assert(elementType == valueType, `Expected array element to be of type "{elementType}", but got "{valueType}"`)
 		return
 	end
 
@@ -180,14 +180,23 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 		return
 	end
 
-	function ArrayInstance:Values(): () -> (T?, number?)
-		local index = 0
-		local count = #cache
+	function ArrayInstance:Values<T>(): () -> (T?, number?)
+		local nextIndex: () -> number? = self:Indexes()
+		return function()
+			local index = nextIndex()
+			if index ~= nil then
+				return cache[index] :: any, index
+			end
+			return
+		end
+	end
 
+	function ArrayInstance:Indexes(): () -> number?
+		local index = 0
 		return function()
 			index += 1
-			if index <= count then
-				return cache[index], index
+			if index <= #cache then
+				return index
 			end
 			return
 		end
@@ -210,14 +219,19 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?)
 	end
 
 	return setmetatable({}, {
+		__metatable = "Not your business ;)",
+		__index = function(_, i)
+			return if typeof(i) == "number" then self._cache[i] else self[i]
+		end,
+		__newindex = function(_, i, v)
+			self:_AssertValidType(v)
+			self._cache[i] = v
+		end,
 		__len = function()
 			return #self._cache
 		end,
-		__index = function(t, i)
-			return if typeof(i) == "number" then self._cache[i] else self[i]
-		end,
-		__newindex = function(t, i, v)
-			self._cache[i] = v
+		__eq = function(_, other)
+			return self._cache == other
 		end,
 		__tostring = function()
 			return tostring(self._cache)
