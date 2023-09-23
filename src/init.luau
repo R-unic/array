@@ -148,8 +148,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 				result = accumulator(result, v)
 			end
 		end
-		assert(result)
-		return result
+		return result :: any
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
