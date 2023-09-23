@@ -33,6 +33,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 	local cache = preset
 
 	function ArrayInstance:_AssertValidType<T>(value: T): nil
+		if elementType == "any" or elementType == "unknown" then return end
 		local valueType = typeof(value) :: CheckableType
 		assert(elementType == valueType, `Expected array element to be of type "{elementType}", but got "{valueType}"`)
 		return
