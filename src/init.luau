@@ -29,7 +29,7 @@ type CheckableType =
 	| "any"
 	| "unknown"
 
-local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof(ArrayInstance)
+local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 	ArrayInstance = { __index = ArrayInstance }
 	local cache = preset
 
@@ -64,14 +64,15 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 		return
 	end
 
-	function ArrayInstance:Combine(...: typeof(ArrayInstance)): nil
+	function ArrayInstance:Combine<T>(...: Array): Array
+		local result = Array.new(elementType, cache)
 		for _, arr in pairs { ... } do
-			self:Push(arr:Unpack())
+			result:Push(arr:Unpack())
 		end
-		return
+		return result
 	end
 
-	function ArrayInstance:Unpack<T>(): ...T
+	function ArrayInstance:Unpack(): ...any
 		return table.unpack(cache) :: any
 	end
 
@@ -111,13 +112,13 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 		return
 	end
 
-	function ArrayInstance:Sort<T>(sorter: SortFunction<T>?): typeof(ArrayInstance)
+	function ArrayInstance:Sort<T>(sorter: SortFunction<T>?): Array
 		local sorted = cache
 		table.sort(sorted, sorter :: any)
 		return Array.new(elementType, sorted)
 	end
 
-	function ArrayInstance:Map<T, U>(transform: (value: T, index: number) -> U): typeof(ArrayInstance)
+	function ArrayInstance:Map<T, U>(transform: (value: T, index: number) -> U): Array
 		local result = Array.new()
 		for v: T, i: number in self:Values() do
 			result:Push(transform(v, i) :: U)
@@ -139,7 +140,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 		return
 	end
 
-	function ArrayInstance:Filter<T>(predicate: PredicateFunction<T>): typeof(ArrayInstance)
+	function ArrayInstance:Filter<T>(predicate: PredicateFunction<T>): Array
 		local filtered = Array.new()
 		for v, i in self:Values() do
 			if predicate(v, i) then
@@ -224,10 +225,10 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 
 	ArrayInstance._cache = cache
 	ArrayInstance.__type = `Array`
-	return ArrayInstance
+	return ArrayInstance :: any
 end
 
-function Array.new<T>(elementType: CheckableType?, cache: { T }?)
+function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayInstance)
 	assert(cache == nil or typeof(cache) == "table", "Preset cache must be a table!")
 
 	local self = getInstance(elementType or "any", cache or {})
@@ -265,6 +266,7 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?)
 	}) :: any
 end
 
+type Array = typeof(Array.new())
 return setmetatable(Array, {
 	__call = function<T>(_, ...)
 		return Array.new(...)
