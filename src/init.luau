@@ -1,6 +1,6 @@
-local HttpService = game:GetService("HttpService")
 --!native
 --!strict
+local HttpService = game:GetService("HttpService")
 local Array = {}
 local ArrayInstance = {}
 ArrayInstance.__index = ArrayInstance
@@ -49,7 +49,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 	end
 
 	function ArrayInstance:Push<T>(...: T): nil
-		for _, v in { ... } do
+		for _, v in pairs { ... } do
 			self:_AssertValidType(v)
 			table.insert(cache, v :: any)
 		end
@@ -57,11 +57,22 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 	end
 
 	function ArrayInstance:Unshift<T>(...: T): nil
-		for _, v in { ... } do
+		for _, v in pairs { ... } do
 			self:_AssertValidType(v)
 			self:Insert(v, 1)
 		end
 		return
+	end
+
+	function ArrayInstance:Combine(...: typeof(ArrayInstance)): nil
+		for _, arr in pairs { ... } do
+			self:Push(arr:Unpack())
+		end
+		return
+	end
+
+	function ArrayInstance:Unpack<T>(): ...T
+		return table.unpack(cache) :: any
 	end
 
 	function ArrayInstance:Insert<T>(value: T, index: number): nil
