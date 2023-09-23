@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 --!native
 --!strict
 local Array = {}
@@ -207,7 +208,12 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): typeof
 		return cache :: any
 	end
 
+	function ArrayInstance:ToString(): string
+		return HttpService:JSONEncode(cache)
+	end
+
 	ArrayInstance._cache = cache
+	ArrayInstance.__type = `Array`
 	return ArrayInstance
 end
 
@@ -235,7 +241,16 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?)
 			return self._cache == other
 		end,
 		__tostring = function()
-			return tostring(self._cache)
+			local function stringify(arr: typeof(self))
+				return arr:Map(function(element)
+					if typeof(element) == "table" and element.__type == "Array" then
+						return stringify(element)
+					else
+						return tostring(element)
+					end
+				end):ToString()
+			end
+			return stringify(self)
 		end
 	}) :: any
 end
