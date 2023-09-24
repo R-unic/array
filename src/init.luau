@@ -96,7 +96,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 	end
 
 	function ArrayInstance:RemoveValue<T>(value: T): nil
-		self:Remove(self:IndexOf(value))
+		self:Remove(self:IndexOf(value) :: number)
 		return
 	end
 
