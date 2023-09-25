@@ -152,31 +152,35 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 
 	function ArrayInstance:Reduce<T, U>(accumulator: (acc: T, v: T) -> T, init: T?): T
 		local result = init
+		local hasInitialValue = init ~= nil
 		for v, i in self:Values() do
-			if i == 1 and not init then
+			if i == 1 and not hasInitialValue then
 				result = v
 			else
-				assert(result)
-				result = accumulator(result, v)
+				result = accumulator(result :: T, v)
 			end
 		end
 		return result :: any
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
+		if #cache == 0 then return false end
+
 		local matches = true
 		for v, i in self:Values() do
 			matches = matches and predicate(v, i)
 		end
-		return if #self == 0 then false else matches
+		return matches
 	end
 	
 	function ArrayInstance:Some<T>(predicate: PredicateFunction<T>): boolean
+		if #cache == 0 then return false end
+
 		local matches = false
 		for v, i in self:Values() do
 			matches = matches or predicate(v, i)
 		end
-		return if #self == 0 then false else matches
+		return matches
 	end
 
 	function ArrayInstance:IndexOf<T>(value: T): number?
@@ -197,21 +201,18 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 		local nextIndex: () -> number? = self:Indexes()
 		return function()
 			local index = nextIndex()
-			if index ~= nil then
-				return cache[index] :: any, index
-			end
-			return
+			if not index then return end
+			return cache[index] :: any, index
 		end
 	end
 
 	function ArrayInstance:Indexes(): () -> number?
 		local index = 0
+		local length = #cache
 		return function()
 			index += 1
-			if index <= #cache then
-				return index
-			end
-			return
+			if index > length then return end
+			return index
 		end
 	end
 
@@ -247,9 +248,6 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 		end,
 		__len = function()
 			return #self._cache
-		end,
-		__eq = function(_, other)
-			return self._cache == other
 		end,
 		__tostring = function()
 			local function stringify(arr: typeof(self))
