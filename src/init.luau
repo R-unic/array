@@ -107,14 +107,45 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 		return false
 	end
 
+	local function sort<T>(arr: { T }, comparator)
+    local function partition<T>(arr: { T }, low: number, high: number)
+			local pivot = arr[high]
+			local i = low - 1
+
+			for j = low, high - 1 do
+				if comparator(arr[j], pivot) then
+					i += 1
+					arr[i], arr[j] = arr[j], arr[i]
+				end
+			end
+
+			comparator = comparator or function(a, b)
+				return (a :: any) < (b :: any)
+			end
+			
+			arr[i + 1], arr[high] = arr[high], arr[i + 1]
+			return i + 1
+    end
+
+    local function quicksort<T>(arr: { T }, low: number, high: number)
+        if low < high then
+					local pivotIndex = partition(arr, low, high)
+					quicksort(arr, low, pivotIndex - 1)
+					quicksort(arr, pivotIndex + 1, high)
+        end
+    end
+
+    quicksort(arr, 1, #arr)
+end
+
 	function ArrayInstance:SortMutable<T>(sorter: SortFunction<T>?): nil
-		table.sort(cache, sorter :: any)
+		sort(cache, sorter :: any)
 		return
 	end
 
 	function ArrayInstance:Sort<T>(sorter: SortFunction<T>?): Array
 		local sorted = cache
-		table.sort(sorted, sorter :: any)
+		sort(sorted, sorter :: any)
 		return Array.new(elementType, sorted)
 	end
 
@@ -202,7 +233,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 		return function()
 			local index = nextIndex()
 			if not index then return end
-			return cache[index] :: any, index
+			return cache[index :: number] :: any, index
 		end
 	end
 
@@ -237,28 +268,32 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 		self:_AssertValidType(v)
 	end
 
+	local function stringify(arr: typeof(self))
+		return arr:Map(function(element)
+			if typeof(element) == "table" and element.__type == "Array" then
+				return stringify(element)
+			else
+				return tostring(element)
+			end
+		end):ToString()
+	end
+
 	return setmetatable({}, {
 		__metatable = "Not your business ;)",
 		__index = function(_, i)
 			return if typeof(i) == "number" then self._cache[i] else self[i]
 		end,
-		__newindex = function(_, i, v)
-			self:_AssertValidType(v)
-			self._cache[i] = v
+		__newindex = function(_, i, v): nil
+			task.spawn(function()
+				self:_AssertValidType(v)
+				self._cache[i] = v
+			end)
+			return
 		end,
 		__len = function()
 			return #self._cache
 		end,
 		__tostring = function()
-			local function stringify(arr: typeof(self))
-				return arr:Map(function(element)
-					if typeof(element) == "table" and element.__type == "Array" then
-						return stringify(element)
-					else
-						return tostring(element)
-					end
-				end):ToString()
-			end
 			return stringify(self)
 		end
 	}) :: any
