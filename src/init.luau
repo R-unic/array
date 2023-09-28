@@ -214,6 +214,15 @@ end
 		return matches
 	end
 
+	function ArrayInstance:Truncate(count: number): Array
+		local truncated = Array.new(elementType)
+		for v, i in self:Values() do
+			if i >= count then break end
+			truncated:Push(v)
+		end
+		return truncated
+	end
+
 	function ArrayInstance:IndexOf<T>(value: T): number?
 		for v, i in self:Values() do
 			if v == value then return i end
