@@ -128,7 +128,7 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 			end
 			
 			arr[i + 1], arr[high] = arr[high], arr[i + 1]
-			return i + 1
+			return i + 1 
     end
 
     local function quicksort<T>(arr: { T }, low: number, high: number)
@@ -184,21 +184,21 @@ end
 		return Array.new(elementType, resultCache)
 	end
 
-	function ArrayInstance:Reduce<T, U>(accumulator: (total: T, v: T) -> T, init: T?): T
-		return Iter.new(cache)
-			:fold(init, function(total, v)
-				if self:IndexOf(v) == 1 and init == nil then
-					return v
-				end
-				return accumulator(total, v)
-			end)
+	function ArrayInstance:Reduce<T, U>(accumulator: (total: T | U, v: T) -> U, init: U?): U
+		if init == nil then
+			return Iter.new(cache):reduce(accumulator)
+		end
+
+		local result = init
+		for v in self:Values() do
+			result = accumulator(result, v)
+		end
+		return result
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
 		return self
-			:Map(function(v, i)
-				return predicate(v, i)
-			end, "boolean")
+			:Map(predicate, "boolean")
 			:Reduce(function(matches, v)
 				return matches and v
 			end, true)
@@ -217,11 +217,8 @@ end
 		end)
 	end
 
-	function ArrayInstance:IndexOf<T>(value: T): number?
-		for v, i in self:Values() do
-			if v == value then return i end
-		end
-		return
+	function ArrayInstance:IndexOf(value: T): number?
+		return table.find(cache, value)
 	end
 
 	function ArrayInstance:ForEach<T>(callback: (value: T, index: number) -> nil): nil
