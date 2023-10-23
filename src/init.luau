@@ -171,7 +171,13 @@ end
 	end
 
 	function ArrayInstance:Find<T>(predicate: PredicateFunction<T>): T?
-		return self:Filter(predicate):First()
+		return Array.new(Iter.new(cache)
+			:filter(function(index, value)
+				return predicate(value, index)
+			end)
+			:take(1)
+			:collectArray())
+			:First()
 	end
 
 	function ArrayInstance:Filter<T>(predicate: PredicateFunction<T>): Array
@@ -184,24 +190,25 @@ end
 		return Array.new(elementType, resultCache)
 	end
 
-	function ArrayInstance:Reduce<T, U>(accumulator: (total: T | U, v: T) -> U, init: U?): U
-		if init == nil then
-			return Iter.new(cache):reduce(accumulator)
-		end
-
-		local result = init
-		for v in self:Values() do
-			result = accumulator(result, v)
-		end
-		return result
+	function ArrayInstance:Reduce<T, U>(accumulator: (total: T | U, v: T | U) -> U, init: U?): U
+		local hasInitialValue = init ~= nil
+		return Iter.new(cache)
+			:fold(init, function(total, i: number, v)
+				if i == 1 and not hasInitialValue then
+					return v
+				end
+				return accumulator(total, v)
+			end)
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
-		return self
-			:Map(predicate, "boolean")
-			:Reduce(function(matches, v)
+		return Iter.new(cache)
+			:map(function(i, v)
+				return predicate(v, i)
+			end)
+			:fold(true, function(matches, _, v)
 				return matches and v
-			end, true)
+			end)
 	end
 	
 	function ArrayInstance:Some<T>(predicate: PredicateFunction<T>): boolean
@@ -212,9 +219,9 @@ end
 	end
 
 	function ArrayInstance:Truncate(count: number): Array
-		return self:Filter(function(_, i)
-			return i <= count
-		end)
+		return Array.new(Iter.new(cache)
+			:take(count)
+			:collectArray())
 	end
 
 	function ArrayInstance:IndexOf(value: T): number?
@@ -256,7 +263,7 @@ end
 	end
 
 	ArrayInstance._cache = cache
-	ArrayInstance.__type = `Array`
+	ArrayInstance.__type = "Array"
 	return ArrayInstance :: any
 end
 
@@ -297,9 +304,7 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 		__add = function(a, b): Array
 			return a:Combine(b) :: any
 		end,
-		__tostring = function(): string
-			return stringify(self)
-		end
+		__tostring = stringify
 	}) :: any
 end
 
