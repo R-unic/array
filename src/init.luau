@@ -151,14 +151,14 @@ end
 		return Array.new(elementType, sorted)
 	end
 
-	function ArrayInstance:Map<T, U>(transform: (value: T, index: number) -> U): Array
+	function ArrayInstance:Map<T, U>(transform: (value: T, index: number) -> U, newElementType: CheckableType?): Array
 		local resultCache = Iter.new(cache)
 			:map(function(index, value)
 				return transform(value, index)
 			end)
 			:collectArray()
 			
-		return Array.new(elementType, resultCache)
+		return Array.new(newElementType or "any", resultCache)
 	end
 
 	function ArrayInstance:FindAndRemove<T>(predicate: PredicateFunction<T>): nil
@@ -196,7 +196,7 @@ end
 		return self
 			:Map(function(v, i)
 				return predicate(v, i)
-			end)
+			end, "boolean")
 			:Reduce(function(matches, v)
 				return matches and v
 			end, true)
@@ -276,7 +276,7 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 			else
 				return tostring(element)
 			end
-		end):ToString()
+		end, "string"):ToString()
 	end
 
 	return setmetatable({}, {
