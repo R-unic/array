@@ -1,7 +1,7 @@
 [package]
 name = "r-unic/array"
 description = "Array class, featuring many familiar methods from JavaScript and more."
-version = "0.3.7"
+version = "0.3.8"
 license = "MIT"
 authors = ["Runic"]
 registry = "https://github.com/UpliftGames/wally-index"
