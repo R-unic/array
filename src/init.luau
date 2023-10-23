@@ -69,7 +69,9 @@ local function getInstance<T>(elementType: CheckableType, preset: { T }): Array
 	function ArrayInstance:Combine<T>(...: Array): Array
 		local result = Array.new(elementType, cache)
 		for _, arr in pairs { ... } do
-			result:Push(arr:Unpack())
+			for v in arr:Values() do
+				result:Push(v :: T)
+			end
 		end
 		return result
 	end
@@ -229,7 +231,7 @@ end
 		return
 	end
 
-	function ArrayInstance:Values<T>(): () -> (T?, number?)
+	function ArrayInstance:Values(): () -> (T?, number?)
 		local nextIndex: () -> number? = self:Indexes()
 		return function()
 			local index = nextIndex()
