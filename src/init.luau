@@ -282,6 +282,9 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 		__len = function()
 			return #self._cache
 		end,
+		__add = function(_, other)
+			return self:Combine(other)
+		end,
 		__tostring = function()
 			return stringify(self)
 		end
