@@ -157,7 +157,8 @@ end
 				return transform(value, index)
 			end)
 			:collectArray()
-		return Array.new(resultCache)
+			
+		return Array.new(elementType, resultCache)
 	end
 
 	function ArrayInstance:FindAndRemove<T>(predicate: PredicateFunction<T>): nil
@@ -177,7 +178,8 @@ end
 				return predicate(value, index)
 			end)
 			:collectArray()
-		return Array.new(resultCache)
+
+		return Array.new(elementType, resultCache)
 	end
 
 	function ArrayInstance:Reduce<T, U>(accumulator: (acc: T, v: T) -> T, init: T?): T
