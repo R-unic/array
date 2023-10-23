@@ -3,16 +3,16 @@
 registry = "test"
 
 [[package]]
-name = "evaera/promise"
-version = "4.0.0"
+name = "chriscerie/iter"
+version = "0.1.4"
+dependencies = [["TestEZ", "roblox/testez@0.4.1"]]
+
+[[package]]
+name = "r-unic/array"
+version = "0.3.1"
+dependencies = [["Iter", "chriscerie/iter@0.1.4"]]
+
+[[package]]
+name = "roblox/testez"
+version = "0.4.1"
 dependencies = []
-
-[[package]]
-name = "howmanysmall/janitor"
-version = "1.15.6"
-dependencies = [["Promise", "evaera/promise@4.0.0"]]
-
-[[package]]
-name = "r-unic/service-event-linker"
-version = "0.1.0"
-dependencies = [["janitor", "howmanysmall/janitor@1.15.6"]]

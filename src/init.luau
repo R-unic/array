@@ -5,6 +5,8 @@ local Array = {}
 local ArrayInstance = {}
 ArrayInstance.__index = ArrayInstance
 
+local Iter = require(script.Parent.Iter)
+
 type PredicateFunction<T> = (value: T, index: number) -> boolean
 type SortFunction<T> = (a: T, b: T) -> boolean
 type CheckableType =
@@ -150,11 +152,12 @@ end
 	end
 
 	function ArrayInstance:Map<T, U>(transform: (value: T, index: number) -> U): Array
-		local result = Array.new()
-		for v: T, i: number in self:Values() do
-			result:Push(transform(v, i) :: U)
-		end
-		return result
+		local resultCache = Iter.new(cache)
+			:map(function(index, value)
+				return transform(value, index)
+			end)
+			:collectArray()
+		return Array.new(resultCache)
 	end
 
 	function ArrayInstance:FindAndRemove<T>(predicate: PredicateFunction<T>): nil
@@ -165,62 +168,39 @@ end
 	end
 
 	function ArrayInstance:Find<T>(predicate: PredicateFunction<T>): T?
-		for v, i in self:Values() do
-			if predicate(v, i) then return v end
-		end
-		return
+		return self:Filter(predicate):First()
 	end
 
 	function ArrayInstance:Filter<T>(predicate: PredicateFunction<T>): Array
-		local filtered = Array.new()
-		for v, i in self:Values() do
-			if predicate(v, i) then
-				filtered:Push(v)
-			end
-		end
-		return filtered
+		local resultCache = Iter.new(cache)
+			:filter(function(index, value)
+				return predicate(value, index)
+			end)
+			:collectArray()
+		return Array.new(resultCache)
 	end
 
 	function ArrayInstance:Reduce<T, U>(accumulator: (acc: T, v: T) -> T, init: T?): T
-		local result = init
-		local hasInitialValue = init ~= nil
-		for v, i in self:Values() do
-			if i == 1 and not hasInitialValue then
-				result = v
-			else
-				result = accumulator(result :: T, v)
-			end
-		end
-		return result :: any
+		return Iter.new(cache)
+			:fold(init, function(index, value)
+				return accumulator(value, index)
+			end)
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
-		if #cache == 0 then return false end
-
-		local matches = true
-		for v, i in self:Values() do
-			matches = matches and predicate(v, i)
-		end
-		return matches
+		return #self:Filter(predicate) == #cache
 	end
 	
 	function ArrayInstance:Some<T>(predicate: PredicateFunction<T>): boolean
-		if #cache == 0 then return false end
-
-		local matches = false
-		for v, i in self:Values() do
-			matches = matches or predicate(v, i)
-		end
-		return matches
+		return Iter.new(cache)
+			:any(function(index, value)
+				return predicate(value, index)
+			end)
 	end
 
 	function ArrayInstance:Truncate(count: number): Array
-		local truncated = Array.new(elementType)
-		for v, i in self:Values() do
-			if i >= count then break end
-			truncated:Push(v)
-		end
-		return truncated
+		local resultCache = Iter.new(cache):take(count):collectArray()
+		return Array.new(resultCache)
 	end
 
 	function ArrayInstance:IndexOf<T>(value: T): number?
