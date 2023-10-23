@@ -184,11 +184,22 @@ end
 
 	function ArrayInstance:Reduce<T, U>(accumulator: (total: T, v: T) -> T, init: T?): T
 		return Iter.new(cache)
-			:fold(init or self:First(), accumulator)
+			:fold(init, function(total, v)
+				if self:IndexOf(v) == 1 and init == nil then
+					return v
+				end
+				return accumulator(total, v)
+			end)
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
-		return #self:Filter(predicate) == #cache
+		return self
+			:Map(function(v, i)
+				return predicate(v, i)
+			end)
+			:Reduce(function(matches, v)
+				return matches and v
+			end, true)
 	end
 	
 	function ArrayInstance:Some<T>(predicate: PredicateFunction<T>): boolean
@@ -199,8 +210,9 @@ end
 	end
 
 	function ArrayInstance:Truncate(count: number): Array
-		local resultCache = Iter.new(cache):take(count):collectArray()
-		return Array.new(resultCache)
+		return self:Filter(function(_, i)
+			return i <= count
+		end)
 	end
 
 	function ArrayInstance:IndexOf<T>(value: T): number?
@@ -257,7 +269,7 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 		self:_AssertValidType(v)
 	end
 
-	local function stringify(arr: typeof(self))
+	local function stringify(arr: typeof(self)): string
 		return arr:Map(function(element)
 			if typeof(element) == "table" and element.__type == "Array" then
 				return stringify(element)
@@ -283,8 +295,8 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 		__len = function(): number
 			return #self._cache
 		end,
-		__add = function(_, other): Array
-			return self:Combine(other) :: any
+		__add = function(a, b): Array
+			return a:Combine(b) :: any
 		end,
 		__tostring = function(): string
 			return stringify(self)
