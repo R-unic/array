@@ -269,23 +269,24 @@ function Array.new<T>(elementType: CheckableType?, cache: { T }?): typeof(ArrayI
 
 	return setmetatable({}, {
 		__metatable = "Not your business ;)",
-		__index = function(_, i)
+		__index = function(_, i): any
 			return if typeof(i) == "number" then self._cache[i] else self[i]
 		end,
 		__newindex = function(_, i, v): nil
-			task.spawn(function()
+			task.spawn(function(): nil
 				self:_AssertValidType(v)
 				self._cache[i] = v
+				return
 			end)
 			return
 		end,
-		__len = function()
+		__len = function(): number
 			return #self._cache
 		end,
-		__add = function(_, other)
-			return self:Combine(other)
+		__add = function(_, other): Array
+			return self:Combine(other) :: any
 		end,
-		__tostring = function()
+		__tostring = function(): string
 			return stringify(self)
 		end
 	}) :: any
