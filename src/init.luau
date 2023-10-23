@@ -182,11 +182,9 @@ end
 		return Array.new(elementType, resultCache)
 	end
 
-	function ArrayInstance:Reduce<T, U>(accumulator: (acc: T, v: T) -> T, init: T?): T
+	function ArrayInstance:Reduce<T, U>(accumulator: (total: T, v: T) -> T, init: T?): T
 		return Iter.new(cache)
-			:fold(init, function(index, value)
-				return accumulator(value, index)
-			end)
+			:fold(init or self:First(), accumulator)
 	end
 
 	function ArrayInstance:Every<T>(predicate: PredicateFunction<T>): boolean
